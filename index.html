@@ -35,7 +35,6 @@
         .emergency-header {
             text-align: center;
             padding: 1.5rem 0;
-            position: relative;
         }
 
         .emergency-header h1 {
@@ -71,7 +70,6 @@
             justify-content: center;
         }
 
-        /* Master Panic Button CSS Structure */
         .panic-button {
             width: 180px;
             height: 180px;
@@ -92,7 +90,6 @@
             transform: scale(0.95);
         }
 
-        /* Triggered State via JavaScript Logic Injection */
         .active-panic {
             background: radial-gradient(circle, #ff1744 0%, #b71c1c 100%) !important;
             animation: flashPulse 1.2s infinite linear;
@@ -176,30 +173,31 @@
             padding: 0.4rem 0;
             border-bottom: 1px solid #2d3545;
             color: #e0e0e0;
-            animation: slideIn 0.2s ease-out;
         }
 
-        .broadcast-node strong {
-            color: var(--emergency-red);
+        .share-btn {
+            background-color: #25d366;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 10px;
+            cursor: pointer;
+            display: none;
+            width: 100%;
         }
 
-        /* UI Keyframe Animations */
         @keyframes flashPulse {
             0% { box-shadow: 0 0 0 0 var(--emergency-glow); }
             70% { box-shadow: 0 0 0 25px rgba(234, 67, 53, 0); }
             100% { box-shadow: 0 0 0 0 rgba(234, 67, 53, 0); }
-        }
-
-        @keyframes slideIn {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    
     <header class="emergency-header">
         <h1>SOS Emergency Hub</h1>
         <p>Instant Broadcaster Network</p>
@@ -210,6 +208,7 @@
             TRIGGER SOS
         </button>
         <p class="status-text" id="statusMessage">System Idle. Press button in case of threat.</p>
+        <button class="share-btn" id="shareBtn" onclick="shareFallback()">SHARE LINK TO OPEN IN CHROME</button>
     </section>
 
     <section class="tracking-section">
@@ -231,7 +230,6 @@
             </ul>
         </div>
     </section>
-
 </div>
 
 <script>
@@ -241,6 +239,7 @@
         const btn = document.getElementById('sosButton');
         const status = document.getElementById('statusMessage');
         const log = document.getElementById('broadcastLog');
+        const shareBtn = document.getElementById('shareBtn');
 
         if (btn.classList.contains('active-panic')) {
             clearInterval(broadcastInterval);
@@ -248,12 +247,13 @@
             btn.innerText = 'TRIGGER SOS';
             status.innerText = "Emergency Broadcast Terminated. System Idle.";
             status.style.color = "#f8f9fa";
+            shareBtn.style.display = "none";
             return;
         }
 
         btn.classList.add('active-panic');
         btn.innerText = 'BROADCASTING...';
-        status.innerText = "CRITICAL: Fetching coordinate mapping and initializing network streams...";
+        status.innerText = "CRITICAL: Initializing satellite mapping data...";
         status.style.color = "#ea4335";
 
         log.innerHTML = "";
@@ -265,9 +265,11 @@
         const log = document.getElementById('broadcastLog');
         const latDisp = document.getElementById('latValue');
         const lonDisp = document.getElementById('lonValue');
+        const shareBtn = document.getElementById('shareBtn');
 
         if (!navigator.geolocation) {
-            status.innerText = "Hardware Failure: Location access blocked or unsupported by browser core.";
+            status.innerText = "Hardware Failure: Location access blocked inside wrapper app.";
+            shareBtn.style.display = "block";
             return;
         }
 
@@ -279,20 +281,31 @@
 
                 latDisp.innerText = lat;
                 lonDisp.innerText = lon;
-                status.innerText = "ALERT ACTIVE: Network payload dispatching continuously.";
+                status.innerText = "ALERT ACTIVE: GPS telemetry streaming successfully.";
+                shareBtn.style.display = "none";
 
                 const newEntry = document.createElement('li');
                 newEntry.className = "broadcast-node";
-                newEntry.innerHTML = `<strong>[${timestamp}]</strong> Packet sent to all hub nodes. Location: ${lat}, ${lon}`;
+                newEntry.innerHTML = `<strong>[${timestamp}]</strong> Packet deployed. Location: ${lat}, ${lon}`;
                 log.insertBefore(newEntry, log.firstChild);
 
             }, (error) => {
-                status.innerText = "Signal Exception: Unable to lock telemetry tracking vectors.";
+                status.innerText = "App Wrapper Error: WebIntoApp blocks location. Click the green button below to run tracking directly in your secure mobile browser!";
+                shareBtn.style.display = "block";
             }, {
                 enableHighAccuracy: true,
                 timeout: 5000
             });
         }, 3000);
+    }
+
+    function shareFallback() {
+        const url = "https://emergencyappmohsin1.netlify.app";
+        if (navigator.share) {
+            navigator.share({ title: 'SOS Emergency Hub', url: url });
+        } else {
+            alert("Copy this link to open directly in Google Chrome: " + url);
+        }
     }
 </script>
 
