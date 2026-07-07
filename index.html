@@ -91,7 +91,6 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
 
-        /* In-App Flash Broadcast Alert Window */
         .incoming-alert-banner {
             background: #b71c1c;
             border: 2px solid #ff1744;
@@ -196,7 +195,6 @@
         <p>Instant Broadcaster Network</p>
     </header>
 
-    <!-- Global Emergency Intercept Banner -->
     <div class="incoming-alert-banner" id="incomingAlert">
         <h3 style="color: white; margin-bottom: 5px;">🚨 EMERGENCY SOS RECEIVED!</h3>
         <p id="alertDetails" style="color: #f8f9fa; font-size: 0.95rem;"></p>
@@ -233,10 +231,8 @@
 
 <script>
     let sendInterval = null;
-    // We use a shared unique public network string node for Mohsin's network
     const networkChannel = "mohsin_emergency_broadcast_sub_system"; 
 
-    // Listen for incoming alerts from any other user completely automatically on load
     window.onload = function() {
         startNetworkListener();
     };
@@ -258,26 +254,38 @@
         status.innerText = "Transmitting live automated location alert payloads to all network nodes...";
 
         broadcastLocation();
-        sendInterval = setInterval(broadcastLocation, 5000); // Send updates every 5 seconds
+        sendInterval = setInterval(broadcastLocation, 5000); 
     }
 
     function broadcastLocation() {
-        if (!navigator.geolocation) return;
+        const latDisp = document.getElementById('latValue');
+        const lonDisp = document.getElementById('lonValue');
+        const status = document.getElementById('statusMessage');
 
-        navigator.geolocation.getCurrentPosition((position) => {
-            const lat = position.coords.latitude.toFixed(6);
-            const lon = position.coords.longitude.toFixed(6);
-            
-            document.getElementById('latValue').innerText = lat;
-            document.getElementById('lonValue').innerText = lon;
+        // Network Geolocation Fetch (Bypasses local app permission block)
+        fetch('https://ipapi.co/json/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.latitude && data.longitude) {
+                const lat = data.latitude.toFixed(6);
+                const lon = data.longitude.toFixed(6);
+                
+                latDisp.innerText = lat;
+                lonDisp.innerText = lon;
 
-            // Direct HTTP network push pipeline across the broadcast array
-            fetch(`https://ntfy.sh/${networkChannel}`, {
-                method: 'POST',
-                body: `SOS Alert! Coordinates: ${lat}, ${lon}`,
-                headers: { 'Title': '🚨 EMERGENCY SOS ACTIVE' }
-            });
-        }, null, { enableHighAccuracy: false, timeout: 6000 });
+                // Send to the shared network pipeline
+                fetch(`https://ntfy.sh/${networkChannel}`, {
+                    method: 'POST',
+                    body: `SOS Alert! Coordinates: ${lat}, ${lon}`,
+                    headers: { 'Title': '🚨 EMERGENCY SOS ACTIVE' }
+                });
+            } else {
+                status.innerText = "Network positioning unavailable. Checking lines...";
+            }
+        })
+        .catch(() => {
+            status.innerText = "Connection error while establishing location sync.";
+        });
     }
 
     function startNetworkListener() {
@@ -287,7 +295,6 @@
         const alertDetails = document.getElementById('alertDetails');
         const alertLink = document.getElementById('alertLink');
 
-        // Continuous streaming pipe connection instantly intercepting payloads from other users
         const eventSource = new EventSource(`https://ntfy.sh/${networkChannel}/sse`);
         
         eventSource.onmessage = function(e) {
@@ -296,27 +303,22 @@
 
             if (emptyLog) emptyLog.style.display = 'none';
             const timestamp = new Date().toLocaleTimeString();
-
-            // Extract coordinates automatically from the incoming text payload
             const msg = data.message;
             const coordMatch = msg.match(/Coordinates:\s*([\d.-]+),\s*([\d.-]+)/);
             
-            // 1. Log it on the device activity screen
             const entry = document.createElement('li');
             entry.className = "broadcast-node";
             entry.innerHTML = `<strong>[${timestamp}]</strong> Network Alert Intercepted: ${msg}`;
             log.insertBefore(entry, log.firstChild);
 
-            // 2. Fire high-priority automatic user notification banner without typing
             if (coordMatch) {
                 const lat = coordMatch[1];
                 const lon = coordMatch[2];
                 
                 alertDetails.innerText = `Another user broadcasted distress! Coordinates: ${lat}, ${lon}`;
-                alertLink.href = `https://maps.google.com/?q=${lat},${lon}`;
-                alertBanner.style.display = 'block'; // Make warning message window appear visible automatically
+                alertLink.href = `https://www.google.com/maps?q=${lat},${lon}`;
+                alertBanner.style.display = 'block'; 
                 
-                // Vibrate user phone if supported hardware is available
                 if (navigator.vibrate) navigator.vibrate([500, 300, 500]);
             }
         };
