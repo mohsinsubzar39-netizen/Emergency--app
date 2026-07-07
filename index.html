@@ -1,14 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOS Emergency Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --app-bg: #11141a;
+            --card-bg: #1b1f27;
+            --text-primary: #f8f9fa;
+            --text-muted: #9ca3af;
+            --emergency-red: #ea4335;
+            --emergency-glow: rgba(234, 67, 53, 0.4);
+        }
+
+        body {
+            background-color: var(--app-bg);
+            color: var(--text-primary);
+            padding: 1.5rem 1rem;
+        }
+
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .emergency-header {
+            text-align: center;
+            padding: 1.5rem 0;
+            position: relative;
+        }
+
+        .emergency-header h1 {
+            font-size: 2.2rem;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .emergency-header p {
+            color: var(--emergency-red);
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+
+        section {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            border: 1px solid #2d3545;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .panic-section {
+            text-align: center;
+            padding: 2.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Master Panic Button CSS Structure */
+        .panic-button {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff5252 0%, #d50000 100%);
+            border: 8px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 900;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 0 0 0 var(--emergency-glow), 0 20px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .panic-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Triggered State via JavaScript Logic Injection */
+        .active-panic {
+            background: radial-gradient(circle, #ff1744 0%, #b71c1c 100%) !important;
+            animation: flashPulse 1.2s infinite linear;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .status-text {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-top: 1rem;
+            padding: 0 1rem;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--emergency-red);
+            padding-left: 0.5rem;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .data-box {
+            background: #11141a;
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid #2d3545;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .data-box .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .data-box .value {
+            font-family: monospace;
+            font-size: 1.2rem;
+            color: #00e676;
+            font-weight: bold;
+        }
+
+        .notification-log {
+            background: #11141a;
+            border-radius: 10px;
+            padding: 1rem;
+            border: 1px solid #2d3545;
+        }
+
+        .notification-log h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        #broadcastLog {
+            list-style: none;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .empty-log {
+            color: #4b5563;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .broadcast-node {
+            font-size: 0.85rem;
+            font-family: monospace;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #2d3545;
+            color: #e0e0e0;
+            animation: slideIn 0.2s ease-out;
+        }
+
+        .broadcast-node strong {
+            color: var(--emergency-red);
+        }
+
+        /* UI Keyframe Animations */
+        @keyframes flashPulse {
+            0% { box-shadow: 0 0 0 0 var(--emergency-glow); }
+            70% { box-shadow: 0 0 0 25px rgba(234, 67, 53, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(234, 67, 53, 0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
 <div class="app-container">
     
     <header class="emergency-header">
-        <div class="pulse-ring"></div>
         <h1>SOS Emergency Hub</h1>
         <p>Instant Broadcaster Network</p>
     </header>
 
     <section class="panic-section">
         <button class="panic-button" id="sosButton" onclick="triggerEmergency()">
-            <span class="btn-text">TRIGGER SOS</span>
+            TRIGGER SOS
         </button>
         <p class="status-text" id="statusMessage">System Idle. Press button in case of threat.</p>
     </section>
@@ -43,26 +242,21 @@
         const status = document.getElementById('statusMessage');
         const log = document.getElementById('broadcastLog');
 
-        // Check if emergency loop is already active to toggle it off if needed
         if (btn.classList.contains('active-panic')) {
             clearInterval(broadcastInterval);
             btn.classList.remove('active-panic');
-            btn.innerHTML = '<span class="btn-text">TRIGGER SOS</span>';
+            btn.innerText = 'TRIGGER SOS';
             status.innerText = "Emergency Broadcast Terminated. System Idle.";
-            status.style.color = "#212529";
+            status.style.color = "#f8f9fa";
             return;
         }
 
-        // Activate Emergency Styling
         btn.classList.add('active-panic');
-        btn.innerHTML = '<span class="btn-text">BROADCASTING...</span>';
+        btn.innerText = 'BROADCASTING...';
         status.innerText = "CRITICAL: Fetching coordinate mapping and initializing network streams...";
-        status.style.color = "#dc3545";
+        status.style.color = "#ea4335";
 
-        // Clear placeholder logs
         log.innerHTML = "";
-
-        // Core continuous tracking loop execution
         startContinuousBroadcast();
     }
 
@@ -72,25 +266,21 @@
         const latDisp = document.getElementById('latValue');
         const lonDisp = document.getElementById('lonValue');
 
-        // Check if the browser supports built-in tracking without external tools
         if (!navigator.geolocation) {
             status.innerText = "Hardware Failure: Location access blocked or unsupported by browser core.";
             return;
         }
 
-        // Loop continuous data intervals natively every 3 seconds
         broadcastInterval = setInterval(() => {
             navigator.geolocation.getCurrentPosition((position) => {
                 const lat = position.coords.latitude.toFixed(6);
                 const lon = position.coords.longitude.toFixed(6);
                 const timestamp = new Date().toLocaleTimeString();
 
-                // Update visual metrics screen
                 latDisp.innerText = lat;
                 lonDisp.innerText = lon;
                 status.innerText = "ALERT ACTIVE: Network payload dispatching continuously.";
 
-                // Generate new continuous broadcast notification nodes dynamically
                 const newEntry = document.createElement('li');
                 newEntry.className = "broadcast-node";
                 newEntry.innerHTML = `<strong>[${timestamp}]</strong> Packet sent to all hub nodes. Location: ${lat}, ${lon}`;
@@ -105,3 +295,6 @@
         }, 3000);
     }
 </script>
+
+</body>
+</html>
