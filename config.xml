@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<widget id="com.mohsin.emergencyapp" version="1.0.0" xmlns="http://phonegap.com/ns/1.0" xmlns:gap="http://phonegap.com/ns/1.0">
+    <name>SOS Emergency Hub</name>
+    <description>Instant Broadcaster Network</description>
+    <author email="your-email@example.com">Mohsin</author>
+    <content src="index.html" />
+    <preference name="Orientation" value="portrait" />
+    <plugin name="cordova-plugin-geolocation" source="npm" />
+</widget>
