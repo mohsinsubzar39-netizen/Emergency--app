@@ -102,6 +102,21 @@
             margin-top: 10px;
         }
 
+        /* Stop Alarm Control Button */
+        .mute-btn {
+            display: none;
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
         h2 {
             font-size: 1.2rem;
             margin-bottom: 1rem;
@@ -173,7 +188,7 @@
         }
     </style>
 </head>
-<body onclick="unlockAudioEngine()">
+<body onclick="initializeAudioHardware()">
 
 <div class="app-container">
     <header class="emergency-header">
@@ -185,13 +200,14 @@
         <h3 style="color: white; margin-bottom: 5px;">🚨 EMERGENCY SOS RECEIVED!</h3>
         <p id="alertDetails" style="color: #f8f9fa; font-size: 0.95rem;"></p>
         <a id="alertLink" href="#" target="_blank">TRACK DISTRESS TARGET</a>
+        <button class="mute-btn" id="muteButton" onclick="silenceLocalAlarm()">SILENCE ALARM SOUND</button>
     </div>
 
     <section class="panic-section">
         <button class="panic-button" id="sosButton" onclick="triggerEmergency()">
             TRIGGER SOS
         </button>
-        <p class="status-text" id="statusMessage">System Idle. Tap anywhere to activate sound engine lines.</p>
+        <p class="status-text" id="statusMessage">System Idle. Tap anywhere to clear audio speaker permissions.</p>
     </section>
 
     <section class="tracking-section">
@@ -227,47 +243,45 @@
     </section>
 </div>
 
+<audio id="emergencyAudioNode" loop src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
+
 <script>
     let sendInterval = null;
     const networkChannel = "mohsin_emergency_broadcast_sub_system"; 
-    let audioCtx = null;
+    let globalAudioNode = null;
 
     window.onload = function() {
         startNetworkListener();
         updateDescription();
+        globalAudioNode = document.getElementById('emergencyAudioNode');
     };
 
-    // Forces browser security to unlock sound card hardware permissions on interaction
-    function unlockAudioEngine() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-            document.getElementById('statusMessage').innerText = "System Idle. Speaker Hardware Sync: Online.";
+    // Pre-loads and primes the physical media controller channel upon screen interaction
+    function initializeAudioHardware() {
+        if (globalAudioNode) {
+            globalAudioNode.play().then(() => {
+                globalAudioNode.pause(); // Instantly pauses but effectively tears down the phone block wall
+                document.getElementById('statusMessage').innerText = "System Idle. Broadcaster Audio: Sync Cleared.";
+            }).catch(() => {});
         }
     }
 
-    function playEmergencyBeep() {
-        try {
-            unlockAudioEngine(); // Re-verify line is clear
-            
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            
-            osc.type = 'sawtooth'; 
-            osc.frequency.setValueAtTime(950, audioCtx.currentTime); 
-            
-            gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-            
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.6);
-        } catch (e) {
-            console.log("Audio pipeline waiting for manual touch event verification.");
+    function playLoudBeep() {
+        if (globalAudioNode) {
+            globalAudioNode.currentTime = 0;
+            globalAudioNode.volume = 1.0; // Sets speaker delivery profile directly to maximum
+            globalAudioNode.play().catch(() => {
+                // Emergency secondary alert option if system blocks background threads
+                alert("🚨 INCOMING SOS RECEIVED! Turn up media volume immediately.");
+            });
+            document.getElementById('muteButton').style.display = 'block';
+        }
+    }
+
+    function silenceLocalAlarm() {
+        if (globalAudioNode) {
+            globalAudioNode.pause();
+            document.getElementById('muteButton').style.display = 'none';
         }
     }
 
@@ -288,7 +302,7 @@
         const btn = document.getElementById('sosButton');
         const status = document.getElementById('statusMessage');
 
-        unlockAudioEngine();
+        initializeAudioHardware();
 
         if (btn.classList.contains('active-panic')) {
             clearInterval(sendInterval);
@@ -362,7 +376,7 @@
                 alertBanner.style.display = 'block'; 
                 
                 if (!msg.includes('[TEST]')) {
-                    playEmergencyBeep();
+                    playLoudBeep();
                     if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
                 }
             }
