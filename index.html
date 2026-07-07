@@ -173,7 +173,7 @@
         }
     </style>
 </head>
-<body>
+<body onclick="unlockAudioEngine()">
 
 <div class="app-container">
     <header class="emergency-header">
@@ -191,7 +191,7 @@
         <button class="panic-button" id="sosButton" onclick="triggerEmergency()">
             TRIGGER SOS
         </button>
-        <p class="status-text" id="statusMessage">System Idle. Audio nodes enabled.</p>
+        <p class="status-text" id="statusMessage">System Idle. Tap anywhere to activate sound engine lines.</p>
     </section>
 
     <section class="tracking-section">
@@ -237,31 +237,37 @@
         updateDescription();
     };
 
-    // Synthesizes a real system alarm sound over device speaker channels
+    // Forces browser security to unlock sound card hardware permissions on interaction
+    function unlockAudioEngine() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+            document.getElementById('statusMessage').innerText = "System Idle. Speaker Hardware Sync: Online.";
+        }
+    }
+
     function playEmergencyBeep() {
         try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            unlockAudioEngine(); // Re-verify line is clear
             
-            // Generate a multi-oscillator pitch sequence to simulate an industrial buzzer
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
             
             osc.type = 'sawtooth'; 
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitched chime note
+            osc.frequency.setValueAtTime(950, audioCtx.currentTime); 
             
-            // Rapid pulse cadence automation
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
             
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
+            osc.stop(audioCtx.currentTime + 0.6);
         } catch (e) {
-            console.log("Audio framework initialization delayed until user gesture.");
+            console.log("Audio pipeline waiting for manual touch event verification.");
         }
     }
 
@@ -282,8 +288,7 @@
         const btn = document.getElementById('sosButton');
         const status = document.getElementById('statusMessage');
 
-        // Initialize Audio Context on user tap due to modern browser security guidelines
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        unlockAudioEngine();
 
         if (btn.classList.contains('active-panic')) {
             clearInterval(sendInterval);
@@ -356,7 +361,6 @@
                 alertLink.href = `https://maps.google.com/?q=${lat},${lon}`;
                 alertBanner.style.display = 'block'; 
                 
-                // Ring sound automatically unless the incoming message packet is specified as a [TEST] 
                 if (!msg.includes('[TEST]')) {
                     playEmergencyBeep();
                     if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
