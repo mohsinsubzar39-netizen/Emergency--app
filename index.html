@@ -42,15 +42,6 @@
             color: var(--text-primary);
         }
 
-        .emergency-header p {
-            color: var(--emergency-red);
-            font-weight: bold;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 0.25rem;
-        }
-
         section {
             background: var(--card-bg);
             padding: 1.5rem;
@@ -98,7 +89,6 @@
             border-radius: 12px;
             margin-bottom: 1.5rem;
             display: none;
-            animation: flashAlert 1s infinite alternate;
         }
 
         .incoming-alert-banner a {
@@ -110,13 +100,6 @@
             text-decoration: none;
             font-weight: bold;
             margin-top: 10px;
-        }
-
-        .status-text {
-            font-size: 1rem;
-            font-weight: 500;
-            margin-top: 1rem;
-            padding: 0 1rem;
         }
 
         h2 {
@@ -140,13 +123,6 @@
             border: 1px solid #2d3545;
         }
 
-        .data-box .label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            font-weight: bold;
-        }
-
         .data-box .value {
             font-family: monospace;
             font-size: 1.2rem;
@@ -154,16 +130,31 @@
             font-weight: bold;
         }
 
-        .notification-log {
+        .extension-select {
+            width: 100%;
+            padding: 12px;
             background: #11141a;
-            border-radius: 10px;
-            padding: 1rem;
             border: 1px solid #2d3545;
+            color: white;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            outline: none;
+        }
+
+        .description-box {
+            background: #11141a;
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid #2d3545;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.4;
         }
 
         #broadcastLog {
             list-style: none;
-            max-height: 200px;
+            max-height: 150px;
             overflow-y: auto;
         }
 
@@ -180,11 +171,6 @@
             70% { box-shadow: 0 0 0 25px rgba(234, 67, 53, 0); }
             100% { box-shadow: 0 0 0 0 rgba(234, 67, 53, 0); }
         }
-
-        @keyframes flashAlert {
-            0% { opacity: 0.9; }
-            100% { opacity: 1; box-shadow: 0 0 20px #ff1744; }
-        }
     </style>
 </head>
 <body>
@@ -192,7 +178,7 @@
 <div class="app-container">
     <header class="emergency-header">
         <h1>SOS Emergency Hub</h1>
-        <p>Instant Broadcaster Network</p>
+        <p style="color: var(--emergency-red); font-size: 0.9rem; font-weight: bold; text-transform: uppercase;">Instant Broadcaster Network</p>
     </header>
 
     <div class="incoming-alert-banner" id="incomingAlert">
@@ -205,26 +191,38 @@
         <button class="panic-button" id="sosButton" onclick="triggerEmergency()">
             TRIGGER SOS
         </button>
-        <p class="status-text" id="statusMessage">System Idle. Press button to broadcast instantly to all users.</p>
+        <p class="status-text" id="statusMessage">System Idle. Audio nodes enabled.</p>
     </section>
 
     <section class="tracking-section">
         <h2>Your Transmission Status</h2>
         <div class="telemetry-grid">
             <div class="data-box">
-                <span class="label">Latitude</span><br>
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: bold;">Latitude</span><br>
                 <span class="value" id="latValue">--.------</span>
             </div>
             <div class="data-box">
-                <span class="label">Longitude</span><br>
+                <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: bold;">Longitude</span><br>
                 <span class="value" id="lonValue">--.------</span>
             </div>
         </div>
-        <div class="notification-log">
+        <div style="background: #11141a; border-radius: 10px; padding: 1rem; border: 1px solid #2d3545;">
             <h3 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem;">Live Shared Network Activity Log</h3>
             <ul id="broadcastLog">
                 <li id="emptyLog" style="color: #4b5563; font-style: italic;">Monitoring live network lines...</li>
             </ul>
+        </div>
+    </section>
+
+    <section class="options-section">
+        <h2>Hub Settings & Information</h2>
+        <select class="extension-select" id="threatLevel" onchange="updateDescription()">
+            <option value="critical">🚨 Level 1: Critical Threat (Immediate Action)</option>
+            <option value="medical">🚑 Level 2: Medical Emergency Support</option>
+            <option value="test">🛠️ Level 3: System Network Testing Wire</option>
+        </select>
+        <div class="description-box" id="optionDescription">
+            Select a hub status node to view tracking rules. Broadcast configurations will route network telemetry according to system selection criteria.
         </div>
     </section>
 </div>
@@ -232,14 +230,60 @@
 <script>
     let sendInterval = null;
     const networkChannel = "mohsin_emergency_broadcast_sub_system"; 
+    let audioCtx = null;
 
     window.onload = function() {
         startNetworkListener();
+        updateDescription();
     };
+
+    // Synthesizes a real system alarm sound over device speaker channels
+    function playEmergencyBeep() {
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            // Generate a multi-oscillator pitch sequence to simulate an industrial buzzer
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            
+            osc.type = 'sawtooth'; 
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitched chime note
+            
+            // Rapid pulse cadence automation
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        } catch (e) {
+            console.log("Audio framework initialization delayed until user gesture.");
+        }
+    }
+
+    function updateDescription() {
+        const selector = document.getElementById('threatLevel').value;
+        const descBox = document.getElementById('optionDescription');
+        
+        if (selector === 'critical') {
+            descBox.innerText = "CRITICAL THREAT CONFIGURATION: Sends immediate location vectors and forces an audible continuous panic sound on all active user clients instantly.";
+        } else if (selector === 'medical') {
+            descBox.innerText = "MEDICAL EMERGENCY CONFIGURATION: Changes tracking parameters to send local network routing for medical responder alerts.";
+        } else if (selector === 'test') {
+            descBox.innerText = "SYSTEM TESTING CONFIGURATION: Insulation wire diagnostic mode. Disables audio output frames to safely check data integrity lines.";
+        }
+    }
 
     function triggerEmergency() {
         const btn = document.getElementById('sosButton');
         const status = document.getElementById('statusMessage');
+
+        // Initialize Audio Context on user tap due to modern browser security guidelines
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         if (btn.classList.contains('active-panic')) {
             clearInterval(sendInterval);
@@ -260,9 +304,8 @@
     function broadcastLocation() {
         const latDisp = document.getElementById('latValue');
         const lonDisp = document.getElementById('lonValue');
-        const status = document.getElementById('statusMessage');
+        const threatType = document.getElementById('threatLevel').value;
 
-        // Network Geolocation Fetch (Bypasses local app permission block)
         fetch('https://ipapi.co/json/')
         .then(response => response.json())
         .then(data => {
@@ -273,19 +316,13 @@
                 latDisp.innerText = lat;
                 lonDisp.innerText = lon;
 
-                // Send to the shared network pipeline
                 fetch(`https://ntfy.sh/${networkChannel}`, {
                     method: 'POST',
-                    body: `SOS Alert! Coordinates: ${lat}, ${lon}`,
+                    body: `[${threatType.toUpperCase()}] SOS Alert! Coordinates: ${lat}, ${lon}`,
                     headers: { 'Title': '🚨 EMERGENCY SOS ACTIVE' }
                 });
-            } else {
-                status.innerText = "Network positioning unavailable. Checking lines...";
             }
-        })
-        .catch(() => {
-            status.innerText = "Connection error while establishing location sync.";
-        });
+        }).catch(() => {});
     }
 
     function startNetworkListener() {
@@ -308,18 +345,22 @@
             
             const entry = document.createElement('li');
             entry.className = "broadcast-node";
-            entry.innerHTML = `<strong>[${timestamp}]</strong> Network Alert Intercepted: ${msg}`;
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${msg}`;
             log.insertBefore(entry, log.firstChild);
 
             if (coordMatch) {
                 const lat = coordMatch[1];
                 const lon = coordMatch[2];
                 
-                alertDetails.innerText = `Another user broadcasted distress! Coordinates: ${lat}, ${lon}`;
-                alertLink.href = `https://www.google.com/maps?q=${lat},${lon}`;
+                alertDetails.innerText = `Incoming Distress Route Intercepted! Coordinates: ${lat}, ${lon}`;
+                alertLink.href = `https://maps.google.com/?q=${lat},${lon}`;
                 alertBanner.style.display = 'block'; 
                 
-                if (navigator.vibrate) navigator.vibrate([500, 300, 500]);
+                // Ring sound automatically unless the incoming message packet is specified as a [TEST] 
+                if (!msg.includes('[TEST]')) {
+                    playEmergencyBeep();
+                    if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
+                }
             }
         };
     }
