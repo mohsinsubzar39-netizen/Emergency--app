@@ -4,9 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOS Emergency Hub</title>
-    <!-- OpenStreetMap Leaflet Engine Assets -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Automatic Push Notification Delivery Module -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignal = window.OneSignal || [];
+      OneSignal.push(function() {
+        OneSignal.init({
+          appId: "YOUR_ONESIGNAL_APP_ID_HERE", // Replace this with your free OneSignal App ID
+          safari_web_id: "web.onesignal.auto.su",
+          notifyButton: { enable: true },
+        });
+      });
+    </script>
     <style>
         * {
             margin: 0;
@@ -27,7 +36,7 @@
         body {
             background-color: var(--app-bg);
             color: var(--text-primary);
-            padding: 1rem;
+            padding: 1.5rem 1rem;
         }
 
         .app-container {
@@ -37,30 +46,22 @@
 
         .emergency-header {
             text-align: center;
-            padding: 1rem 0;
+            padding: 1.5rem 0;
         }
 
         .emergency-header h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             color: var(--text-primary);
+            letter-spacing: -0.5px;
         }
 
-        .user-box {
-            background: var(--card-bg);
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            border: 1px solid #2d3545;
-        }
-
-        .user-box input {
-            width: 100%;
-            padding: 10px;
-            background: #11141a;
-            border: 1px solid #2d3545;
-            color: white;
-            border-radius: 6px;
+        .emergency-header p {
+            color: var(--emergency-red);
             font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
         }
 
         section {
@@ -69,112 +70,116 @@
             border-radius: 16px;
             margin-bottom: 1.5rem;
             border: 1px solid #2d3545;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
         .panic-section {
             text-align: center;
+            padding: 2.5rem 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
         }
 
         .panic-button {
-            width: 150px;
-            height: 150px;
+            width: 180px;
+            height: 180px;
             border-radius: 50%;
             background: radial-gradient(circle, #ff5252 0%, #d50000 100%);
             border: 8px solid rgba(255, 255, 255, 0.1);
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             font-weight: 900;
             cursor: pointer;
-            box-shadow: 0 0 0 0 var(--emergency-glow), 0 10px 20px rgba(0,0,0,0.5);
+            outline: none;
+            box-shadow: 0 0 0 0 var(--emergency-glow), 0 20px 30px rgba(0,0,0,0.5);
             transition: all 0.3s ease;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .active-panic {
             background: radial-gradient(circle, #ff1744 0%, #b71c1c 100%) !important;
             animation: flashPulse 1.2s infinite linear;
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
-        /* Live Map Container styling */
-        #map {
-            height: 300px;
-            width: 100%;
-            border-radius: 12px;
+        .status-text {
+            font-size: 1rem;
+            font-weight: 500;
             margin-top: 1rem;
-            border: 2px solid #2d3545;
-            background: #11141a;
+            padding: 0 1rem;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--emergency-red);
+            padding-left: 0.5rem;
         }
 
         .telemetry-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .data-box {
             background: #11141a;
-            padding: 0.75rem;
+            padding: 1rem;
             border-radius: 10px;
             border: 1px solid #2d3545;
+            display: flex;
+            flex-direction: column;
         }
 
         .data-box .label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
+            font-size: 0.75rem;
             text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: bold;
+            margin-bottom: 0.25rem;
         }
 
         .data-box .value {
             font-family: monospace;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: #00e676;
+            font-weight: bold;
         }
 
-        .network-log {
+        .notification-log {
             background: #11141a;
             border-radius: 10px;
             padding: 1rem;
             border: 1px solid #2d3545;
         }
 
-        .network-log h3 {
-            font-size: 0.8rem;
+        .notification-log h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
             color: var(--text-muted);
             margin-bottom: 0.5rem;
-            text-transform: uppercase;
         }
 
-        #userList {
+        #broadcastLog {
             list-style: none;
             max-height: 150px;
             overflow-y: auto;
         }
 
-        .user-node {
+        .broadcast-node {
             font-size: 0.85rem;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #2d3545;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .user-node .name {
-            color: #ff5252;
-            font-weight: bold;
-        }
-
-        .user-node .coords {
             font-family: monospace;
-            color: #9ca3af;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #2d3545;
+            color: #e0e0e0;
         }
 
         @keyframes flashPulse {
             0% { box-shadow: 0 0 0 0 var(--emergency-glow); }
-            70% { box-shadow: 0 0 0 20px rgba(234, 67, 53, 0); }
+            70% { box-shadow: 0 0 0 25px rgba(234, 67, 53, 0); }
             100% { box-shadow: 0 0 0 0 rgba(234, 67, 53, 0); }
         }
     </style>
@@ -184,169 +189,92 @@
 <div class="app-container">
     <header class="emergency-header">
         <h1>SOS Emergency Hub</h1>
-        <p style="color: var(--emergency-red); font-size: 0.8rem; font-weight: bold;">GLOBAL BROADCASTER CLIENT</p>
+        <p>Instant Broadcaster Network</p>
     </header>
 
-    <!-- Custom Identity Field -->
-    <div class="user-box">
-        <label style="font-size: 0.8rem; color: var(--text-muted); display:block; margin-bottom: 5px;">YOUR NAME / CALLSIGN:</label>
-        <input type="text" id="usernameInput" value="User_Mohsin" placeholder="Enter your name...">
-    </div>
-
     <section class="panic-section">
-        <button class="panic-button" id="sosButton" onclick="toggleEmergencyBroadcast()">
+        <button class="panic-button" id="sosButton" onclick="triggerEmergency()">
             TRIGGER SOS
         </button>
-        <p class="status-text" id="statusMessage" style="font-size: 0.9rem;">System Ready. Standby mode.</p>
-    </section>
-
-    <section>
-        <h2>Live Global Hub Map</h2>
-        <!-- Leaflet Live Map Object Rendering Frame -->
-        <div id="map"></div>
+        <p class="status-text" id="statusMessage">System Idle. Press button to push broadcast.</p>
     </section>
 
     <section class="tracking-section">
-        <h2>Your Live Telemetry</h2>
+        <h2>Active Telemetry Link</h2>
         <div class="telemetry-grid">
             <div class="data-box">
-                <span class="label">Latitude</span><br>
+                <span class="label">Latitude</span>
                 <span class="value" id="latValue">--.------</span>
             </div>
             <div class="data-box">
-                <span class="label">Longitude</span><br>
+                <span class="label">Longitude</span>
                 <span class="value" id="lonValue">--.------</span>
             </div>
         </div>
-        
-        <div class="network-log">
-            <h3>Active Network Active Users</h3>
-            <ul id="userList">
-                <li style="color: #4b5563; font-style: italic; font-size: 0.85rem;">Scanning data nodes...</li>
+        <div class="notification-log">
+            <h3>System Status Log</h3>
+            <ul id="broadcastLog">
+                <li style="color: #4b5563; font-style: italic;">Broadcaster ready.</li>
             </ul>
         </div>
     </section>
 </div>
 
 <script>
-    let sendInterval = null;
-    let fetchInterval = null;
-    let map, markerLayer;
-    let fallbackDatabase = {}; // Local memory mirror array
+    let broadcastInterval = null;
 
-    // Initialize Map View Window
-    window.onload = function() {
-        map = L.map('map').setView([0, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-        markerLayer = L.layerGroup().addTo(map);
-        
-        // Continually check for other broadcast alerts instantly every 4 seconds
-        startSyncingHubData();
-        fetchHubData();
-    };
-
-    function toggleEmergencyBroadcast() {
+    function triggerEmergency() {
         const btn = document.getElementById('sosButton');
         const status = document.getElementById('statusMessage');
 
         if (btn.classList.contains('active-panic')) {
-            clearInterval(sendInterval);
+            clearInterval(broadcastInterval);
             btn.classList.remove('active-panic');
             btn.innerText = 'TRIGGER SOS';
-            status.innerText = "Broadcast offline. System safely secured.";
-            status.style.color = "#f8f9fa";
+            status.innerText = "Broadcast terminated.";
             return;
         }
 
         btn.classList.add('active-panic');
-        btn.innerText = 'BROADCASTING';
-        status.innerText = "SOS transmission operational. Synchronizing location payload...";
-        status.style.color = "#ea4335";
+        btn.innerText = 'BROADCASTING...';
+        status.innerText = "Transmitting device data instantly via network notifications...";
 
-        executeTelemetryUpload();
-        sendInterval = setInterval(executeTelemetryUpload, 5000);
-    }
-
-    function executeTelemetryUpload() {
-        const username = document.getElementById('usernameInput').value || "Anonymous";
-        const latDisp = document.getElementById('latValue');
-        const lonDisp = document.getElementById('lonValue');
-        const status = document.getElementById('statusMessage');
-
-        if (!navigator.geolocation) {
-            status.innerText = "Hardware Failure: GPS not found.";
-            return;
-        }
-
-        // Native app tracking algorithm bypasses Chrome requirement via highAccuracy abstraction modifications
+        // Fetch location instantly with no lag parameters
         navigator.geolocation.getCurrentPosition((position) => {
             const lat = position.coords.latitude.toFixed(6);
             const lon = position.coords.longitude.toFixed(6);
             
-            latDisp.innerText = lat;
-            lonDisp.innerText = lon;
+            document.getElementById('latValue').innerText = lat;
+            document.getElementById('lonValue').innerText = lon;
 
-            // Transmit and publish tracking node out to the free server architecture pipeline
-            const payload = { name: username, lat: parseFloat(lat), lon: parseFloat(lon), time: new Date().toLocaleTimeString() };
-            
-            fetch(`https://kvdb.io/MNZ7f9XqC8mZpWreA4H9gB/${username}`, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            }).then(() => {
-                status.innerText = "SOS ACTIVE: Location broadcasting safely inside App Wrapper.";
-            }).catch(() => {
-                // Fallback architecture mirroring strategy if network pipeline encounters drop constraints
-                status.innerText = "SOS ACTIVE: Database sync lagging, tracking locally.";
-            });
-
-        }, (error) => {
-            status.innerText = "Locating via alternative network cells...";
-        }, {
-            enableHighAccuracy: false, // Core permission workaround parameter fix
-            timeout: 10000
-        });
+            // Trigger instant push alert to ALL devices registered to the app
+            sendInstantGlobalNotification(lat, lon);
+        }, null, { enableHighAccuracy: false, timeout: 4000 });
     }
 
-    function startSyncingHubData() {
-        fetchInterval = setInterval(fetchHubData, 4000);
-    }
+    function sendInstantGlobalNotification(lat, lon) {
+        const log = document.getElementById('broadcastLog');
+        const timestamp = new Date().toLocaleTimeString();
 
-    function fetchHubData() {
-        const userListElement = document.getElementById('userList');
-        
-        // Scan the central database array bucket for every online person
-        fetch('https://kvdb.io/MNZ7f9XqC8mZpWreA4H9gB/?values=true')
-        .then(response => response.json())
-        .then(data => {
-            if(!data || data.length === 0) return;
-            
-            userListElement.innerHTML = "";
-            markerLayer.clearLayers();
-            let bounds = [];
-
-            data.forEach(item => {
-                try {
-                    const userData = JSON.parse(item[1]);
-                    
-                    // Render listing block layout element
-                    const entry = document.createElement('li');
-                    entry.className = "user-node";
-                    entry.innerHTML = `<span class="name">⚠️ ${userData.name}</span><span class="coords">${userData.lat}, ${userData.lon} (${userData.time})</span>`;
-                    userListElement.appendChild(entry);
-
-                    // Drop pin onto interface visual tracking grid map structure
-                    const pin = L.marker([userData.lat, userData.lon]).bindPopup(`<b>${userData.name}</b><br>SOS Active<br>${userData.time}`);
-                    markerLayer.addLayer(pin);
-                    bounds.push([userData.lat, userData.lon]);
-                } catch(e) {}
-            });
-
-            // Auto-focus camera lens position onto active coordinate hotspots
-            if(bounds.length > 0 && map) {
-                map.fitBounds(bounds, { maxZoom: 14, padding: [30, 30] });
-            }
+        // OneSignal Network Push Pipeline - instantly pushes alert out to phone lockscreens
+        fetch("https://onesignal.com/api/v1/notifications", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": "Basic YOUR_REST_API_KEY_HERE" // Put OneSignal Key here
+            },
+            body: JSON.stringify({
+                app_id: "YOUR_ONESIGNAL_APP_ID_HERE",
+                included_segments: ["All"],
+                headings: {"en": "🚨 CRITICAL SOS ALERT"},
+                contents: {"en": `User needs help! Live coordinates: ${lat}, ${lon}`},
+                url: `https://maps.google.com/?q=${lat},${lon}` // Clicking notification opens direction instantly
+            })
+        }).then(() => {
+            const newEntry = document.createElement('li');
+            newEntry.className = "broadcast-node";
+            newEntry.innerHTML = `<strong>[${timestamp}]</strong> Notification fired to all users!`;
+            log.insertBefore(newEntry, log.firstChild);
         }).catch(() => {});
     }
 </script>
