@@ -1,0 +1,107 @@
+<div class="app-container">
+    
+    <header class="emergency-header">
+        <div class="pulse-ring"></div>
+        <h1>SOS Emergency Hub</h1>
+        <p>Instant Broadcaster Network</p>
+    </header>
+
+    <section class="panic-section">
+        <button class="panic-button" id="sosButton" onclick="triggerEmergency()">
+            <span class="btn-text">TRIGGER SOS</span>
+        </button>
+        <p class="status-text" id="statusMessage">System Idle. Press button in case of threat.</p>
+    </section>
+
+    <section class="tracking-section">
+        <h2>Active Telemetry Link</h2>
+        <div class="telemetry-grid">
+            <div class="data-box">
+                <span class="label">Latitude</span>
+                <span class="value" id="latValue">--.------</span>
+            </div>
+            <div class="data-box">
+                <span class="label">Longitude</span>
+                <span class="value" id="lonValue">--.------</span>
+            </div>
+        </div>
+        <div class="notification-log">
+            <h3>Outgoing Continuous Broadcasts</h3>
+            <ul id="broadcastLog">
+                <li class="empty-log">No active outgoing payloads.</li>
+            </ul>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    let broadcastInterval = null;
+
+    function triggerEmergency() {
+        const btn = document.getElementById('sosButton');
+        const status = document.getElementById('statusMessage');
+        const log = document.getElementById('broadcastLog');
+
+        // Check if emergency loop is already active to toggle it off if needed
+        if (btn.classList.contains('active-panic')) {
+            clearInterval(broadcastInterval);
+            btn.classList.remove('active-panic');
+            btn.innerHTML = '<span class="btn-text">TRIGGER SOS</span>';
+            status.innerText = "Emergency Broadcast Terminated. System Idle.";
+            status.style.color = "#212529";
+            return;
+        }
+
+        // Activate Emergency Styling
+        btn.classList.add('active-panic');
+        btn.innerHTML = '<span class="btn-text">BROADCASTING...</span>';
+        status.innerText = "CRITICAL: Fetching coordinate mapping and initializing network streams...";
+        status.style.color = "#dc3545";
+
+        // Clear placeholder logs
+        log.innerHTML = "";
+
+        // Core continuous tracking loop execution
+        startContinuousBroadcast();
+    }
+
+    function startContinuousBroadcast() {
+        const status = document.getElementById('statusMessage');
+        const log = document.getElementById('broadcastLog');
+        const latDisp = document.getElementById('latValue');
+        const lonDisp = document.getElementById('lonValue');
+
+        // Check if the browser supports built-in tracking without external tools
+        if (!navigator.geolocation) {
+            status.innerText = "Hardware Failure: Location access blocked or unsupported by browser core.";
+            return;
+        }
+
+        // Loop continuous data intervals natively every 3 seconds
+        broadcastInterval = setInterval(() => {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const lat = position.coords.latitude.toFixed(6);
+                const lon = position.coords.longitude.toFixed(6);
+                const timestamp = new Date().toLocaleTimeString();
+
+                // Update visual metrics screen
+                latDisp.innerText = lat;
+                lonDisp.innerText = lon;
+                status.innerText = "ALERT ACTIVE: Network payload dispatching continuously.";
+
+                // Generate new continuous broadcast notification nodes dynamically
+                const newEntry = document.createElement('li');
+                newEntry.className = "broadcast-node";
+                newEntry.innerHTML = `<strong>[${timestamp}]</strong> Packet sent to all hub nodes. Location: ${lat}, ${lon}`;
+                log.insertBefore(newEntry, log.firstChild);
+
+            }, (error) => {
+                status.innerText = "Signal Exception: Unable to lock telemetry tracking vectors.";
+            }, {
+                enableHighAccuracy: true,
+                timeout: 5000
+            });
+        }, 3000);
+    }
+</script>
